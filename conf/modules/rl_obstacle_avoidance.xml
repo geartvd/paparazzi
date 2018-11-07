@@ -1,0 +1,17 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="rl_obstacle_avoidance">
+  <doc>
+    <description>Obstacle avoidance method using RL and the aerodynamic interaction between obstacle and quadrotor</description>
+  </doc>
+  <header>
+    <file name="rl_obstacle_avoidance.h"/>
+  </header>
+  <init fun="rl_obstacle_avoidance_init()"/>
+  <periodic fun="rl_obstacle_avoidance_periodic()" freq="100" start="rl_obstacle_avoidance_start()" stop="rl_obstacle_avoidance_stop()" autorun="FALSE"/>
+  <makefile>
+    <file name="rl_obstacle_avoidance.c"/>
+    <file name="log_to_file.c"/>
+  </makefile>
+</module>
+
