@@ -337,7 +337,7 @@ bool nav_check_wp_time(struct EnuCoor_i *wp, uint16_t stay_time)
 static inline void nav_set_altitude(void)
 {
   static int32_t last_nav_alt = 0;
-  if (abs(nav_altitude - last_nav_alt) > (POS_BFP_OF_REAL(0.2))) {
+  if (abs(nav_altitude - last_nav_alt) > (POS_BFP_OF_REAL(0.01))) {
     nav_flight_altitude = nav_altitude;
     last_nav_alt = nav_altitude;
   }
