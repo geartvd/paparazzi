@@ -8,7 +8,7 @@
     <file name="rl_obstacle_avoidance.h"/>
   </header>
   <init fun="rl_obstacle_avoidance_init()"/>
-  <periodic fun="rl_obstacle_avoidance_periodic()" freq="100" start="rl_obstacle_avoidance_start()" stop="rl_obstacle_avoidance_stop()" autorun="FALSE"/>
+  <periodic fun="rl_obstacle_avoidance_periodic()" freq="512" start="rl_obstacle_avoidance_start()" stop="rl_obstacle_avoidance_stop()" autorun="FALSE"/>
   <makefile>
     <file name="rl_obstacle_avoidance.c"/>
     <file name="log_to_file.c"/>

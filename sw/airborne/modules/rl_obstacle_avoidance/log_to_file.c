@@ -17,11 +17,12 @@
 #endif
 
 // Set pre-processor constants
-#define RL_OBSTACLE_AVOIDANCE_PRINT_TO_TERMINAL TRUE
+#define RL_OBSTACLE_AVOIDANCE_PRINT_TO_TERMINAL FALSE
 
 
 // Declaration of global variables
 static FILE *file_logger = NULL; // File pointer
+static bool csv_header_written = false;
 
 /** Start the file logger and open a new file */
 void log_to_file_start(char csv_header_line[])
@@ -58,6 +59,7 @@ void log_to_file_start(char csv_header_line[])
 
     if (file_logger != NULL) {
         fprintf(file_logger, "%s", csv_header_line);
+        csv_header_written = true;
     }
 
     if (RL_OBSTACLE_AVOIDANCE_PRINT_TO_TERMINAL){
@@ -68,7 +70,7 @@ void log_to_file_start(char csv_header_line[])
 
 /** Log one line to the log file **/
 void log_to_file_log_line(int timestep, rl_variable variables[], int array_size){
-    if (file_logger == NULL) {
+    if ((file_logger == NULL) || (!csv_header_written)) {
         return;
     }
     // Construct string to be printed
@@ -87,7 +89,9 @@ void log_to_file_log_line(int timestep, rl_variable variables[], int array_size)
             sprintf(temp, variables[i].format, *(float *)variables[i].pointer);
         } else if(strcmp(variables[i].type,"long") == 0){
             sprintf(temp, variables[i].format, *(long *)variables[i].pointer);
-        } else{
+        } else if(strcmp(variables[i].type,"char32") == 0){
+            sprintf(temp, variables[i].format, *(char *)variables[i].pointer);
+        } else {
             sprintf(temp,"Unknown type:%s",variables[i].type);
         }
         strcat(line, temp);
@@ -112,5 +116,6 @@ void log_to_file_stop(void){
             printf("Closed file\n");
         }
     }
+    csv_header_written = false;
 }
 

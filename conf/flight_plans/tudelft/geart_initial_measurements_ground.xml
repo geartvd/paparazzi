@@ -18,13 +18,15 @@
         <waypoint name="CLIMB" x="1.9" y="1.0"/>
         <waypoint name="STDBY" x="1.9" y="1.0"/>
         <waypoint name="TD" x="0.8" y="-1.7"/>
-        <waypoint name="MEASURE_START" x="-0.6" y="-3.0" height="1.0" />
-        <waypoint name="MEASURE_0" x="-0.6" y="-3.0" height="0.5" />
-        <waypoint name="MEASURE_1" x="-0.6" y="-3.0" height="0.4" />
+        <waypoint name="MEASURE_START" x="2.9" y="-1.5" height="1.0" />
+        <waypoint name="MEASURE_0" x="-0.6" y="-3.0" height="0.4" />
+        <waypoint name="MEASURE_1" x="-0.6" y="-3.0" height="0.35" />
         <waypoint name="MEASURE_2" x="-0.6" y="-3.0" height="0.3" />
-        <waypoint name="MEASURE_3" x="1.0" y="1.0" height="0.2" />
-        <waypoint name="MEASURE_4" x="1.0" y="1.0" height="0.1" />
-        <waypoint name="MEASURE_5" x="1.0" y="1.0" height="0.05" />
+        <waypoint name="MEASURE_3" x="1.0" y="1.0" height="0.25" />
+        <waypoint name="MEASURE_4" x="1.0" y="1.0" height="0.2" />
+        <waypoint name="MEASURE_5" x="1.0" y="1.0" height="0.15" />
+        <waypoint name="MEASURE_6" x="1.0" y="1.0" height="0.1" />
+        <waypoint name="MEASURE_7" x="1.0" y="1.0" height="0.05" />
         <waypoint lat="51.9905836" lon="4.3767729" name="_CZ1"/>
         <waypoint lat="51.9906365" lon="4.3767138" name="_CZ2"/>
         <waypoint lat="51.990680" lon="4.376805" name="_CZ3"/>
@@ -97,47 +99,62 @@
             <call_once fun="NavKillThrottle()"/>
             <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
         </block>
+        <!--<block name="Initialize External force estimator">-->
+            <!--<call_once fun="rl_obstacle_avoidance_turn_on()"/>-->
+        <!--</block>-->
         <block key="r" name="Start Engine">
             <call_once fun="rl_obstacle_avoidance_turn_on()"/>
+            <call_once fun="rl_obstacle_avoidance_flight_status(10)" />
             <call_once fun="NavResurrect()"/>
             <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
             <!--<call_once fun="NavResurrect()"/>-->
         </block>
         <block key="t" name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
+            <call_once fun="rl_obstacle_avoidance_flight_status(20)" />
             <exception cond="GetPosAlt() > 1.0" deroute="Standby"/>
             <call_once fun="NavSetWaypointHere(WP_CLIMB)"/>
             <stay climb="nav_climb_vspeed" vmode="climb" wp="CLIMB"/>
         </block>
         <block key="s" name="Standby" strip_button="Standby" strip_icon="home.png">
+            <call_once fun="rl_obstacle_avoidance_flight_status(30)" />
             <call_once fun="NavSetWaypointHere(WP_STDBY)"/>
             <stay wp="STDBY"/>
         </block>
         <block key="g" name="Go to measurement point" strip_button="Go" strip_icon="lookfore.png">
+            <call_once fun="rl_obstacle_avoidance_flight_status(40)" />
             <go wp="MEASURE_START"/>
             <call_once fun="nav_set_heading_deg(0)" />
             <stay wp="MEASURE_START"/>
         </block>
         <block key="m" name="Start measurements">
+            <call_once fun="rl_obstacle_avoidance_flight_status(50)" />
             <call_once fun="NavSetWaypointHere(WP_MEASURE_0)"/>
             <call_once fun="NavSetWaypointHere(WP_MEASURE_1)"/>
             <call_once fun="NavSetWaypointHere(WP_MEASURE_2)"/>
             <call_once fun="NavSetWaypointHere(WP_MEASURE_3)"/>
             <call_once fun="NavSetWaypointHere(WP_MEASURE_4)"/>
             <call_once fun="NavSetWaypointHere(WP_MEASURE_5)"/>
+            <call_once fun="NavSetWaypointHere(WP_MEASURE_6)"/>
+            <call_once fun="NavSetWaypointHere(WP_MEASURE_7)"/>
             <go wp="MEASURE_0"/>
-            <stay wp="MEASURE_0" until="stage_time>4"/>
+            <stay wp="MEASURE_0" until="stage_time>2"/>
             <go wp="MEASURE_1"/>
-            <stay wp="MEASURE_1" until="stage_time>4"/>
+            <stay wp="MEASURE_1" until="stage_time>2"/>
             <go wp="MEASURE_2"/>
-            <stay wp="MEASURE_2" until="stage_time>4"/>
+            <stay wp="MEASURE_2" until="stage_time>2"/>
             <go wp="MEASURE_3"/>
-            <stay wp="MEASURE_3" until="stage_time>4"/>
+            <stay wp="MEASURE_3" until="stage_time>2"/>
             <go wp="MEASURE_4"/>
-            <stay wp="MEASURE_4" until="stage_time>4"/>
+            <stay wp="MEASURE_4" until="stage_time>2"/>
             <go wp="MEASURE_5"/>
-            <stay wp="MEASURE_5" until="stage_time>4"/>
+            <stay wp="MEASURE_5" until="stage_time>8"/>
+            <go wp="MEASURE_6"/>
+            <stay wp="MEASURE_6" until="stage_time>8"/>
+            <go wp="MEASURE_7"/>
+            <stay wp="MEASURE_7" until="stage_time>8"/>
         </block>
         <block key="e" name="End measurements">
+            <call_once fun="rl_obstacle_avoidance_flight_status(80)" />
             <go wp="MEASURE_START" />
             <stay wp="MEASURE_START" />
         </block>
@@ -146,6 +163,7 @@
             <stay wp="HOME"/>
         </block>
         <block key="l" name="Land here" strip_button="Land Here" strip_icon="land-right.png">
+            <call_once fun="rl_obstacle_avoidance_flight_status(90)" />
             <call_once fun="NavSetWaypointHere(WP_TD)"/>
             <go wp="TD"/>
             <deroute block="Flare"/>
@@ -162,6 +180,7 @@
             <stay climb="nav_descend_vspeed" vmode="climb" wp="TD"/>
         </block>
         <block name="Landed">
+            <call_once fun="rl_obstacle_avoidance_flight_status(99)" />
             <call_once fun="NavKillThrottle()"/>
             <call_once fun="rl_obstacle_avoidance_turn_off()"/>
             <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>

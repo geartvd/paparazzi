@@ -41,6 +41,7 @@
 #include "subsystems/actuators.h"
 #include "boards/bebop/actuators.h"
 #include "firmwares/rotorcraft/stabilization.h"
+#include "filters/low_pass_filter.h"
 
 // Include other paparazzi modules
 #include "generated/modules.h"
@@ -53,6 +54,7 @@
 #define RL_OBSTACLE_AVOIDANCE_TELEMETRY TRUE
 
 // Declaration of global variables
+float rl_obstacle_avoidance_filter_cutoff = 3.0;
 
 // Declaration of local variables
 static int32_t number_of_variables = 0;
@@ -81,11 +83,26 @@ static uint16_t motor_speed_nw = 0;
 static uint16_t motor_speed_ne = 0;
 static uint16_t motor_speed_se = 0;
 static uint16_t motor_speed_sw = 0;
+static int32_t flight_status = 0;
+static float F_ext_onboard_est = 0.0;
+static float body_acceleration_w_filt = 0.0;
+static float F_thrust_est = 0.0;
 
-static rl_variable list_of_variables_to_log[21] = {
+//static float filt_tau;
+//static float filt_sample_time;
+static Butterworth4LowPass filt_accel_body[3];
+static Butterworth4LowPass filt_motor_speed[4];
+static Butterworth4LowPass filt_body_rate[4];
+static float estimated_k_over_m[4] = {3.7352494607033004E-06, 3.7352494607033004E-06, 3.7352494607033004E-06, 3.7352494607033004E-06};
+static float estimated_accel_bias[3] = {0.0, 0.0, -15.191601570000005};
+static bool set_estimated_k_over_m = true;
+static bool set_estimated_accel_bias = true;
+
+static rl_variable list_of_variables_to_log[25] = {
         // Name, Type, Format, *pointer
         {"Timestep","int32_t","%d",&timestep},
         {"Time (milliseconds)","int32_t","%li",&time_rl},
+        {"Flight status","int32_t","%d",&flight_status},
         {"Body Acceleration u","float","%f",&body_acceleration_u},
         {"Body Acceleration v","float","%f",&body_acceleration_v},
         {"Body Acceleration w","float","%f",&body_acceleration_w},
@@ -104,8 +121,15 @@ static rl_variable list_of_variables_to_log[21] = {
         {"Motorspeed 1 (NW)","uint16_t","%d",&motor_speed_nw},
         {"Motorspeed 2 (NE)","uint16_t","%d",&motor_speed_ne},
         {"Motorspeed 3 (SE)","uint16_t","%d",&motor_speed_se},
-        {"Motorspeed 4 (SW)","uint16_t","%d",&motor_speed_sw}
+        {"Motorspeed 4 (SW)","uint16_t","%d",&motor_speed_sw},
+        {"F_ext_onboard_est","float","%f",&F_ext_onboard_est},
+        {"body_acceleration_w_filt","float","%f",&body_acceleration_w_filt},
+        {"F_thrust_est","float","%f",&F_thrust_est},
 };
+
+// Define static functions
+static float estimate_F_ext_onboard(void);
+static void send_rl_variables(struct transport_tx *trans, struct link_device *dev);
 
 static void send_rl_variables(struct transport_tx *trans, struct link_device *dev)
 {
@@ -117,7 +141,8 @@ static void send_rl_variables(struct transport_tx *trans, struct link_device *de
                                         &enu_position_x, &enu_position_y, &enu_position_z,
                                         &body_rate_p, &body_rate_q, &body_rate_r,
                                         &body_attitude_phi, &body_attitude_theta, &body_attitude_psi,
-                                        &motor_speed_nw, &motor_speed_ne, &motor_speed_se, &motor_speed_sw);
+                                        &motor_speed_nw, &motor_speed_ne, &motor_speed_se, &motor_speed_sw,
+                                        &F_ext_onboard_est);
 }
 
 /** Initialization function **/
@@ -151,6 +176,25 @@ void rl_obstacle_avoidance_start(void){
         log_to_file_start(csv_header_line);
     }
 
+    // Initialize butterworth filters
+    float filt_tau = 1.0 / (2.0 * M_PI * rl_obstacle_avoidance_filter_cutoff);
+    float filt_sample_time= 1.0 / PERIODIC_FREQUENCY;
+
+    // Filtered body accelerations
+    for (int8_t i = 0; i < 3; i++) {
+        init_butterworth_4_low_pass(&filt_accel_body[i], filt_tau, filt_sample_time, 0.0);
+    }
+
+    // Filtered RPM
+    for (int8_t i = 0; i < 4; i++) {
+        init_butterworth_4_low_pass(&filt_motor_speed[i], filt_tau, filt_sample_time, 0.0);
+    }
+
+    // Filtered body rates
+    for (int8_t i = 0; i < 3; i++) {
+        init_butterworth_4_low_pass(&filt_body_rate[i], filt_tau, filt_sample_time, 0.0);
+    }
+
     // Set start time in seconds
     gettimeofday(&currentTime, NULL);
     start_time_seconds = currentTime.tv_sec;
@@ -170,6 +214,12 @@ void rl_obstacle_avoidance_update_measurements(void){
     body_acceleration_u = ACCEL_FLOAT_OF_BFP(body_accelerations->x);
     body_acceleration_v = ACCEL_FLOAT_OF_BFP(body_accelerations->y);
     body_acceleration_w = ACCEL_FLOAT_OF_BFP(body_accelerations->z);
+
+    // Update filtered accelerations in the body frame
+    update_butterworth_4_low_pass(&filt_accel_body[0], body_acceleration_u);
+    update_butterworth_4_low_pass(&filt_accel_body[1], body_acceleration_v);
+    update_butterworth_4_low_pass(&filt_accel_body[2], body_acceleration_w);
+    body_acceleration_w_filt = filt_accel_body[2].lp2.o[0];
 
     // Update speeds in the body frame
     struct FloatVect3 *speed_ned = (struct FloatVect3 *)stateGetSpeedNed_f();
@@ -192,6 +242,11 @@ void rl_obstacle_avoidance_update_measurements(void){
     body_rate_q = body_rates_f->q;
     body_rate_r = body_rates_f->r;
 
+    // Update filtered angular rates in the body frame
+    update_butterworth_4_low_pass(&filt_body_rate[0], body_rate_p);
+    update_butterworth_4_low_pass(&filt_body_rate[1], body_rate_q);
+    update_butterworth_4_low_pass(&filt_body_rate[2], body_rate_r);
+
     // Update euler angels in the body frame
     struct FloatEulers *ned_attitude_f = stateGetNedToBodyEulers_f();
     body_attitude_phi = ned_attitude_f->phi;
@@ -203,10 +258,39 @@ void rl_obstacle_avoidance_update_measurements(void){
     motor_speed_ne = actuators_bebop.rpm_obs[1];
     motor_speed_se = actuators_bebop.rpm_obs[2];
     motor_speed_sw = actuators_bebop.rpm_obs[3];
-//    motor_speed_nw = actuators[0];
-//    motor_speed_ne = actuators[1];
-//    motor_speed_se = actuators[2];
-//    motor_speed_sw = actuators[3];
+
+    // Update filtered motor speeds
+    for (int8_t i = 0; i < 4; i++) {
+        update_butterworth_4_low_pass(&filt_motor_speed[i], actuators_bebop.rpm_obs[i]);
+    }
+
+    // Estimate F_ext
+    F_ext_onboard_est = estimate_F_ext_onboard();
+}
+
+static float estimate_F_ext_onboard(void){
+    float F_ext = 0.0;
+
+    if(set_estimated_k_over_m && set_estimated_accel_bias) {
+        // Estimate thrust produced by rotors
+        F_thrust_est = 0.0;
+        for (int8_t i = 0; i < 4; i++) {
+            F_thrust_est =
+                    F_thrust_est + estimated_k_over_m[i] * powf((filt_motor_speed[i].lp2.o[0] * 2 * M_PI / 60), 2);
+        }
+        F_ext = (filt_accel_body[2].lp2.o[0] - estimated_accel_bias[2]) \
+                 + (filt_body_rate[0].lp2.o[0] * body_speed_v) \
+                 - (filt_body_rate[1].lp2.o[0] * body_speed_u) \
+                 - 9.81 * cos(body_attitude_phi) * cos(body_attitude_theta) \
+                 + F_thrust_est;
+        printf("(%f)+(%f*%f)-(%f*%f)-9.81*%f*%f+%f\n", \
+                filt_accel_body[2].lp2.o[0], \
+                filt_body_rate[0].lp2.o[0], body_speed_v, \
+                filt_body_rate[1].lp2.o[0], body_speed_u, \
+                cos(body_attitude_phi), cos(body_attitude_theta), \
+                F_thrust_est);
+    }
+    return F_ext;
 }
 
 
@@ -218,10 +302,6 @@ void rl_obstacle_avoidance_periodic(void) {
     if(RL_OBSTACLE_AVOIDANCE_LOG){
         // Log measurements, states and actions to log file
         log_to_file_log_line(timestep, list_of_variables_to_log, number_of_variables);
-    }
-
-    if(RL_OBSTACLE_AVOIDANCE_TELEMETRY){
-        // Send measurements, states and actions to telemetry
     }
 
 
@@ -244,4 +324,10 @@ void rl_obstacle_avoidance_stop(void){
     if(RL_OBSTACLE_AVOIDANCE_LOG){
         log_to_file_stop();
     }
+}
+
+/** Functon used to set and sture the flight status:
+ * */
+void rl_obstacle_avoidance_flight_status(int status){
+    flight_status = status;
 }

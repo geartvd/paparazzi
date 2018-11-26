@@ -41,6 +41,7 @@ extern void rl_obstacle_avoidance_stop(void);
 extern void rl_obstacle_avoidance_update_measurements(void);
 extern void rl_obstacle_avoidance_turn_on(void);
 extern void rl_obstacle_avoidance_turn_off(void);
+extern void rl_obstacle_avoidance_flight_status(int);
 //extern void send_rl_variables(struct transport_tx *trans, struct link_device *dev);
 
 #endif

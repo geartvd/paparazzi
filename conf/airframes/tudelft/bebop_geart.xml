@@ -13,6 +13,9 @@
         <!-- RL Obstacle avoidance-->
         <module name="rl_obstacle_avoidance"/>
 
+        <!-- Use sonar for height determination -->
+        <!--<define name="USE_SONAR" value="TRUE"/>-->
+
         <!-- Subsystem section -->
         <module name="telemetry" type="transparent_udp"/>
         <module name="radio_control" type="datalink"/>
@@ -174,6 +177,9 @@
         <!-- Adaptive Learning Rate -->
         <define name="USE_ADAPTIVE" value="FALSE"/>
         <define name="ADAPTIVE_MU" value="0.0001"/>
+
+        <!--Priority for each axis (roll, pitch, yaw and thrust)-->
+        <define name="WLS_PRIORITIES" value="{1000, 1000, 1, 1000}"/>
     </section>
 
     <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
