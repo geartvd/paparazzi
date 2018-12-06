@@ -43,6 +43,10 @@
             <!--<define name="FILE_LOGGER_PATH" value="/data/ftp/internal_000"/>-->
         <!--</module>-->
 
+        <!-- Camera parameters, required for Gazebo -->
+        <define name="MT9F002_OUTPUT_SCALER" value="0.25"/>
+        <define name="MT9F002_TARGET_FPS" value="30" />
+
     </firmware>
 
     <commands>

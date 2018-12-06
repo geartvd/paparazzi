@@ -34,6 +34,15 @@ typedef struct {
     void *pointer;
 } rl_variable;
 
+#define RL_ROLLING_WINDOW_SIZE 25
+
+typedef struct{
+    float F_ext_rolling[RL_ROLLING_WINDOW_SIZE];
+    int discr_F_ext;
+    int discr_F_ext_rolling;
+
+} rl_state;
+
 extern void rl_obstacle_avoidance_init(void);
 extern void rl_obstacle_avoidance_start(void);
 extern void rl_obstacle_avoidance_periodic(void);
@@ -42,6 +51,8 @@ extern void rl_obstacle_avoidance_update_measurements(void);
 extern void rl_obstacle_avoidance_turn_on(void);
 extern void rl_obstacle_avoidance_turn_off(void);
 extern void rl_obstacle_avoidance_flight_status(int);
+extern int rl_obstacle_avoidance_save(void);
+extern void rl_obstacle_avoidance_save_concluded(void);
 //extern void send_rl_variables(struct transport_tx *trans, struct link_device *dev);
 
 #endif
