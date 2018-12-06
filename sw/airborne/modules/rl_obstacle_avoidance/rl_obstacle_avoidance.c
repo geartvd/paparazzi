@@ -46,6 +46,7 @@
 
 // Include other paparazzi modules
 #include "generated/modules.h"
+#include "subsystems/datalink/datalink.h" // dl_buffer
 
 // Include module specific files
 #include "log_to_file.h"
@@ -179,6 +180,7 @@ static float binary_search(float sorted_list[], int low, int high, float element
 static int rl_obstacle_avoidance_get_action(rl_state state);
 static void rl_obstacle_avoidance_state_estimator(void);
 static void rl_obstacle_avoidance_perform_action(int action);
+static void rl_obstacle_avoidance_parse_uplink(void);
 
 static void send_rl_variables(struct transport_tx *trans, struct link_device *dev);
 
@@ -584,3 +586,8 @@ int random_in_range(int min, int max){
 }
 
 #endif
+
+void rl_obstacle_avoidance_parse_uplink(uint8_t msg_id, ){
+    // dl_buffer
+
+}

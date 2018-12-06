@@ -9,6 +9,7 @@
   </header>
   <init fun="rl_obstacle_avoidance_init()"/>
   <periodic fun="rl_obstacle_avoidance_periodic()" freq="512" start="rl_obstacle_avoidance_start()" stop="rl_obstacle_avoidance_stop()" autorun="FALSE"/>
+  <datalink message="RL_TRAINING_UP" fun="rl_obstacle_avoidance_parse_uplink(msg_id, buf)"/>
   <makefile>
     <file name="rl_obstacle_avoidance.c"/>
     <file name="log_to_file.c"/>
