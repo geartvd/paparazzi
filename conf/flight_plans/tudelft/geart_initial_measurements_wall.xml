@@ -1,14 +1,13 @@
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
 
-<flight_plan name="Flight plan to train a RL agent to avoid ground surfaces in the TU Delft Cyberzoo"
+<flight_plan name="Flight plan to measure the wall effect in the TU Delft Cyberzoo"
              alt="1.0" ground_alt="0" security_height="0.01"
-             lat0="51.9906361" lon0="4.3767874" max_dist_from_home="8">
+             lat0="51.9906360" lon0="4.3767874" max_dist_from_home="8">
     <header>
         #include "subsystems/datalink/datalink.h"
         #include "subsystems/electrical.h"
         #include "subsystems/radio_control.h"
         #include "subsystems/ahrs.h"
-        <!--#include "modules/rl_obstacle_avoidance.h"-->
 
         // Note: use 'git submodule update --init -- sw/ext/tudelft_gazebo_models/'
         // to download the required models.
@@ -19,11 +18,27 @@
         <waypoint name="CLIMB" x="1.9" y="1.0"/>
         <waypoint name="STDBY" x="1.9" y="1.0"/>
         <waypoint name="TD" x="0.8" y="-1.7"/>
-        <!--<waypoint name="EPISODE_START" x="2.9" y="-1.5" height="1.0" />-->
-        <waypoint name="EPISODE_START" x="-0.7" y="-4.0" height="1.0" />
-        <!--<waypoint name="EPISODE_HOVER" x="2.9" y="-1.5" height="0.7" />-->
-        <!--<waypoint name="EPISODE_TARGET" x="2.9" y="-1.5" height="0.0" />-->
-        <waypoint name="EPISODE_TARGET" x="-0.7" y="-4.0" height="0.0" />
+        <waypoint name="MEASURE_START" x="-0.8710322943932031" y="-3.726905412412255" height="1.0" />
+        <waypoint name="MEASURE_0" x="-0.8710322943932031" y="-3.726905412412255" height="1.0" />
+        <waypoint name="MEASURE_1" x="-0.9131562054536682" y="-3.7538419324210235" height="1.0" />
+        <waypoint name="MEASURE_2" x="-0.9552801166077083" y="-3.7807784522186227" height="1.0" />
+        <waypoint name="MEASURE_3" x="-0.9974040277037103" y="-3.807714972593221" height="1.0" />
+        <waypoint name="MEASURE_4" x="-1.0395279388577503" y="-3.8346514923908197" height="1.0" />
+        <waypoint name="MEASURE_5" x="-1.0816518499537526" y="-3.8615880127654174" height="1.0" />
+        <waypoint name="MEASURE_6" x="-1.1237757610142176" y="-3.8885245322006874" height="1.0" />
+        <waypoint name="MEASURE_7" x="-1.1658996721682577" y="-3.9154610525717857" height="1.0" />
+        <waypoint name="MEASURE_8" x="-1.2080235832642598" y="-3.942397572946384" height="1.0" />
+        <waypoint name="MEASURE_9" x="-1.2501474944182998" y="-3.969334092743983" height="1.0" />
+        <waypoint name="MEASURE_10" x="-1.292271405514302" y="-3.996270613118581" height="1.0" />
+        <waypoint name="MEASURE_11" x="-1.3343953166103042" y="-4.02320713291968" height="1.0" />
+        <waypoint name="MEASURE_12" x="-1.376519227728807" y="-4.050143652924948" height="1.0" />
+        <waypoint name="MEASURE_13" x="-1.4186431388248093" y="-4.077080172726047" height="1.0" />
+        <waypoint name="MEASURE_14" x="-1.4607670499788494" y="-4.104016693097146" height="1.0" />
+        <waypoint name="MEASURE_15" x="-1.5028909610748515" y="-4.130953212898245" height="1.0" />
+        <waypoint name="MEASURE_16" x="-1.5450148721708534" y="-4.157889733272842" height="1.0" />
+        <waypoint name="MEASURE_17" x="-1.5871387833248936" y="-4.184826253643941" height="1.0" />
+        <waypoint name="MEASURE_18" x="-1.6292626943853588" y="-4.211762773079211" height="1.0" />
+        <waypoint name="MEASURE_19" x="-1.6713866055393987" y="-4.238699293450309" height="1.0" />
         <waypoint lat="51.9905836" lon="4.3767729" name="_CZ1"/>
         <waypoint lat="51.9906365" lon="4.3767138" name="_CZ2"/>
         <waypoint lat="51.990680" lon="4.376805" name="_CZ3"/>
@@ -101,7 +116,6 @@
         <!--</block>-->
         <block name="Start Obstacle Avoidance initialization">
             <call_once fun="rl_obstacle_avoidance_turn_on()"/>
-            <call_once fun="rl_obstacle_avoidance_request_new_policy()" />
             <attitude pitch="0" roll="0" throttle="0" until="set_estimated_accel_bias" vmode="throttle"/>
         </block>
         <block key="r" name="Start Engine">
@@ -127,53 +141,42 @@
             <call_once fun="NavSetWaypointHere(WP_STDBY)"/>
             <stay wp="STDBY"/>
         </block>
-        <block key="g" name="Go to episode start" strip_button="Go" strip_icon="lookfore.png">
+        <block key="g" name="Go to measurement point" strip_button="Go" strip_icon="lookfore.png">
             <call_once fun="rl_obstacle_avoidance_flight_status(40)" />
-            <go wp="EPISODE_START"/>
-            <call_once fun="nav_set_heading_deg(0)" />
-            <stay wp="EPISODE_START" until="stage_time>1"/>
-            <stay wp="EPISODE_START" until="rl_obstacle_avoidance_policy_received"/>
-            <deroute block="Wait for episode start"/>
+            <go wp="MEASURE_START"/>
+            <stay wp="MEASURE_START"/>
         </block>
-        <block name="Wait for episode start">
-            <call_once fun="rl_obstacle_avoidance_flight_status(45)" />
-            <stay wp="EPISODE_START" />
-            <exception cond="rl_autostart" deroute="Start episode"/>
+        <block name="Rotate quadrotor head on">
+            <call_once fun="nav_set_heading_deg(rl_wall_heading)" />
+            <stay wp="MEASURE_START"/>
         </block>
-        <block name="Start episode">
-            <call_once fun="rl_obstacle_avoidance_start_episode()" />
-            <call_once fun="rl_obstacle_avoidance_flight_status(49)" />
-            <deroute block="Run episode"/>
-        </block>
-        <block key="m" name="Run episode">
+        <block key="m" name="Start measurements">
             <call_once fun="rl_obstacle_avoidance_flight_status(50)" />
-            <call_once fun="NavSetWaypointHere(WP_EPISODE_TARGET)"/>
-            <exception cond="rl_obstacle_avoidance_hover()" deroute="Interrupt hover"/>
-            <exception cond="rl_obstacle_avoidance_save()" deroute="Interrupt save"/>
-            <exception cond="rl_obstacle_avoidance_fail()" deroute="End episode"/>
-            <exception cond="rl_obstacle_avoidance_timeout()" deroute="End episode"/>
-            <!--<stay wp="EPISODE_TARGET" vmode="climb" climb="0.0" until="stage_time>1"/>-->
-            <stay wp="EPISODE_TARGET" vmode="climb" climb="rl_obstacle_avoidance_descend_speed"/>
+            <go wp = "MEASURE_0" />< stay wp = "MEASURE_0" until = "stage_time>5" />
+            <go wp = "MEASURE_1" />< stay wp = "MEASURE_1" until = "stage_time>5" />
+            <go wp = "MEASURE_2" />< stay wp = "MEASURE_2" until = "stage_time>5" />
+            <go wp = "MEASURE_3" />< stay wp = "MEASURE_3" until = "stage_time>5" />
+            <go wp = "MEASURE_4" />< stay wp = "MEASURE_4" until = "stage_time>5" />
+            <go wp = "MEASURE_5" />< stay wp = "MEASURE_5" until = "stage_time>5" />
+            <go wp = "MEASURE_6" />< stay wp = "MEASURE_6" until = "stage_time>5" />
+            <go wp = "MEASURE_7" />< stay wp = "MEASURE_7" until = "stage_time>5" />
+            <go wp = "MEASURE_8" />< stay wp = "MEASURE_8" until = "stage_time>5" />
+            <go wp = "MEASURE_9" />< stay wp = "MEASURE_9" until = "stage_time>5" />
+            <go wp = "MEASURE_10" />< stay wp = "MEASURE_10" until = "stage_time>5" />
+            <go wp = "MEASURE_11" />< stay wp = "MEASURE_11" until = "stage_time>5" />
+            <go wp = "MEASURE_12" />< stay wp = "MEASURE_12" until = "stage_time>5" />
+            <go wp = "MEASURE_13" />< stay wp = "MEASURE_13" until = "stage_time>5" />
+            <go wp = "MEASURE_14" />< stay wp = "MEASURE_14" until = "stage_time>5" />
+            <go wp = "MEASURE_15" />< stay wp = "MEASURE_15" until = "stage_time>5" />
+            <go wp = "MEASURE_16" />< stay wp = "MEASURE_16" until = "stage_time>5" />
+            <go wp = "MEASURE_17" />< stay wp = "MEASURE_17" until = "stage_time>5" />
+            <go wp = "MEASURE_18" />< stay wp = "MEASURE_18" until = "stage_time>5" />
+            <go wp = "MEASURE_19" />< stay wp = "MEASURE_19" until = "stage_time>5" />
         </block>
-        <block name="Interrupt hover">
-            <call_once fun="rl_obstacle_avoidance_flight_status(60)" />
-            <stay wp="EPISODE_TARGET" vmode="climb" climb="0.0"  until="stage_time>0.5"/>
-            <call_once fun="rl_obstacle_avoidance_hover_concluded()" />
-            <!--<stay wp="EPISODE_TARGET" vmode="climb" climb="0.0"  until="stage_time>10"/>-->
-            <deroute block="Run episode"/>
-        </block>
-        <block name="Interrupt save">
-            <call_once fun="rl_obstacle_avoidance_flight_status(70)" />
-            <attitude pitch="0" roll="0" throttle="1" until="(GetPosAlt() > 0.3)" vmode="throttle"/>
-            <call_once fun="rl_obstacle_avoidance_save_concluded()" />
-            <deroute block="End episode"/>
-        </block>
-        <block key="e" name="End episode">
-            <call_once fun="rl_obstacle_avoidance_request_new_policy()" />
+        <block key="e" name="End measurements">
             <call_once fun="rl_obstacle_avoidance_flight_status(80)" />
-            <go wp="EPISODE_START" />
-            <call_once fun="rl_obstacle_avoidance_end_episode()" />
-            <deroute block="Go to episode start"/>
+            <go wp="MEASURE_START" />
+            <stay wp="MEASURE_START" />
         </block>
         <block name="Go Home">
             <go wp="HOME"/>
@@ -198,8 +201,8 @@
         </block>
         <block name="Landed">
             <call_once fun="rl_obstacle_avoidance_flight_status(99)" />
-            <call_once fun="rl_obstacle_avoidance_turn_off()"/>
             <call_once fun="NavKillThrottle()"/>
+            <call_once fun="rl_obstacle_avoidance_turn_off()"/>
             <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
         </block>
     </blocks>

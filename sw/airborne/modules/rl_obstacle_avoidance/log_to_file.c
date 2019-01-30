@@ -13,7 +13,12 @@
 
 // Set to default path for bebop if logging path is not set in the airframe config file
 #ifndef RL_OBSTACLE_AVOIDANCE_LOG_PATH
-#define RL_OBSTACLE_AVOIDANCE_LOG_PATH /data/ftp/internal_000
+#ifndef USE_NPS
+    #define RL_OBSTACLE_AVOIDANCE_LOG_PATH /data/ftp/internal_000
+#else
+    #define RL_OBSTACLE_AVOIDANCE_LOG_PATH /home/geart/NPSsimulation
+#endif
+
 #endif
 
 // Set pre-processor constants
@@ -23,6 +28,7 @@
 // Declaration of global variables
 static FILE *file_logger = NULL; // File pointer
 static bool csv_header_written = false;
+char rl_obstacle_avoidance_run_filename[50] = "";
 
 /** Start the file logger and open a new file */
 void log_to_file_start(char csv_header_line[])
@@ -47,18 +53,22 @@ void log_to_file_start(char csv_header_line[])
     char filename[512];
 
     // Check for available files
-    sprintf(filename, "%s/%s.csv", STRINGIFY(RL_OBSTACLE_AVOIDANCE_LOG_PATH), date_time);
-    while ((file_logger = fopen(filename, "r"))) {
+    sprintf(filename, "%s/run_%s.csv", STRINGIFY(RL_OBSTACLE_AVOIDANCE_LOG_PATH), date_time);
+    sprintf(rl_obstacle_avoidance_run_filename, "run_%s.csv", date_time);
+    while ((file_logger = fopen(filename, "rb"))) {
         fclose(file_logger);
 
         sprintf(filename, "%s/%s_%05d.csv", STRINGIFY(RL_OBSTACLE_AVOIDANCE_LOG_PATH), date_time, counter);
+        sprintf(rl_obstacle_avoidance_run_filename, "%s_%05d.csv", date_time, counter);
         counter++;
     }
 
-    file_logger = fopen(filename, "w");
+    file_logger = fopen(filename, "wb");
 
     if (file_logger != NULL) {
+        fflush(file_logger);
         fprintf(file_logger, "%s", csv_header_line);
+        fflush(file_logger);
         csv_header_written = true;
     }
 
@@ -69,7 +79,7 @@ void log_to_file_start(char csv_header_line[])
 }
 
 /** Log one line to the log file **/
-void log_to_file_log_line(int timestep, rl_variable variables[], int array_size){
+void log_to_file_log_line(rl_variable variables[], int array_size){
     if ((file_logger == NULL) || (!csv_header_written)) {
         return;
     }
@@ -91,6 +101,8 @@ void log_to_file_log_line(int timestep, rl_variable variables[], int array_size)
             sprintf(temp, variables[i].format, *(long *)variables[i].pointer);
         } else if(strcmp(variables[i].type,"char32") == 0){
             sprintf(temp, variables[i].format, *(char *)variables[i].pointer);
+        } else if(strcmp(variables[i].type,"double") == 0){
+            sprintf(temp, variables[i].format, *(double *)variables[i].pointer);
         } else {
             sprintf(temp,"Unknown type:%s",variables[i].type);
         }
@@ -98,13 +110,17 @@ void log_to_file_log_line(int timestep, rl_variable variables[], int array_size)
 
     }
 
-    // Print line to file
-    fprintf(file_logger, "%s\n", line);
-
     if (RL_OBSTACLE_AVOIDANCE_PRINT_TO_TERMINAL){
         // For debugging purposes, also print to terminal
         printf("%s\n", line);
     }
+
+    // Print line to file
+    fprintf(file_logger, "%s\n", line);
+
+    // Flush buffer
+    fflush(file_logger);
+
 }
 
 /** Stop the logger an nicely close the file */
@@ -112,9 +128,7 @@ void log_to_file_stop(void){
     if (file_logger != NULL) {
         fclose(file_logger);
         file_logger = NULL;
-        if(RL_OBSTACLE_AVOIDANCE_PRINT_TO_TERMINAL){
-            printf("Closed file\n");
-        }
+        printf("Closed file\n");
     }
     csv_header_written = false;
 }

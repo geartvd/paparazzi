@@ -102,8 +102,11 @@
         <!--<block name="Initialize External force estimator">-->
             <!--<call_once fun="rl_obstacle_avoidance_turn_on()"/>-->
         <!--</block>-->
-        <block key="r" name="Start Engine">
+        <block name="Start Obstacle Avoidance initialization">
             <call_once fun="rl_obstacle_avoidance_turn_on()"/>
+            <attitude pitch="0" roll="0" throttle="0" until="set_estimated_accel_bias" vmode="throttle"/>
+        </block>
+        <block key="r" name="Start Engine">
             <call_once fun="rl_obstacle_avoidance_flight_status(10)" />
             <call_once fun="NavResurrect()"/>
             <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
@@ -139,19 +142,19 @@
             <go wp="MEASURE_0"/>
             <stay wp="MEASURE_0" until="stage_time>2"/>
             <go wp="MEASURE_1"/>
-            <stay wp="MEASURE_1" until="stage_time>2"/>
+            <stay wp="MEASURE_1" until="stage_time>4"/>
             <go wp="MEASURE_2"/>
-            <stay wp="MEASURE_2" until="stage_time>2"/>
+            <stay wp="MEASURE_2" until="stage_time>6"/>
             <go wp="MEASURE_3"/>
-            <stay wp="MEASURE_3" until="stage_time>2"/>
+            <stay wp="MEASURE_3" until="stage_time>8"/>
             <go wp="MEASURE_4"/>
-            <stay wp="MEASURE_4" until="stage_time>2"/>
+            <stay wp="MEASURE_4" until="stage_time>10"/>
             <go wp="MEASURE_5"/>
-            <stay wp="MEASURE_5" until="stage_time>8"/>
+            <stay wp="MEASURE_5" until="stage_time>12"/>
             <go wp="MEASURE_6"/>
-            <stay wp="MEASURE_6" until="stage_time>8"/>
+            <stay wp="MEASURE_6" until="stage_time>14"/>
             <go wp="MEASURE_7"/>
-            <stay wp="MEASURE_7" until="stage_time>8"/>
+            <stay wp="MEASURE_7" until="stage_time>16"/>
         </block>
         <block key="e" name="End measurements">
             <call_once fun="rl_obstacle_avoidance_flight_status(80)" />

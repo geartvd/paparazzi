@@ -26,6 +26,8 @@
 #ifndef RL_OBSTACLE_AVOIDANCE_H
 #define RL_OBSTACLE_AVOIDANCE_H
 
+#include "std.h"
+
 // Define data structures
 typedef struct {
     char name[30];
@@ -35,24 +37,50 @@ typedef struct {
 } rl_variable;
 
 #define RL_ROLLING_WINDOW_SIZE 25
+#define DL_RL_TRAINING_UP 77
 
 typedef struct{
-    float F_ext_rolling[RL_ROLLING_WINDOW_SIZE];
+//    float F_ext_rolling[RL_ROLLING_WINDOW_SIZE];
     int discr_F_ext;
-    int discr_F_ext_rolling;
+    int discr_prev_action;
 
 } rl_state;
 
+// Variables
+extern float rl_obstacle_avoidance_termination_dist;
+extern float rl_obstacle_avoidance_descend_speed;
+extern float rl_wall_heading;
+extern int rl_obstacle_avoidance_policy_received;
+extern int set_estimated_accel_bias;
+extern int set_estimated_k_over_m;
+extern float rl_exploration_rate;
+extern int rl_autostart;
+
+// Functions
 extern void rl_obstacle_avoidance_init(void);
 extern void rl_obstacle_avoidance_start(void);
 extern void rl_obstacle_avoidance_periodic(void);
 extern void rl_obstacle_avoidance_stop(void);
-extern void rl_obstacle_avoidance_update_measurements(void);
 extern void rl_obstacle_avoidance_turn_on(void);
 extern void rl_obstacle_avoidance_turn_off(void);
+
+extern int rl_obstacle_avoidance_est_accel_bias(void);
+extern void rl_obstacle_avoidance_est_k_over_m(void);
+extern void rl_obstacle_avoidance_update_measurements(void);
 extern void rl_obstacle_avoidance_flight_status(int);
+
+extern int rl_obstacle_avoidance_hover(void);
 extern int rl_obstacle_avoidance_save(void);
+extern int rl_obstacle_avoidance_fail(void);
+extern int rl_obstacle_avoidance_timeout(void);
+extern void rl_obstacle_avoidance_hover_concluded(void);
 extern void rl_obstacle_avoidance_save_concluded(void);
+
+extern void rl_obstacle_avoidance_parse_uplink(void);
+extern void rl_obstacle_avoidance_start_episode(void);
+extern void rl_obstacle_avoidance_end_episode(void);
+
+extern void rl_obstacle_avoidance_request_new_policy(void);
 //extern void send_rl_variables(struct transport_tx *trans, struct link_device *dev);
 
 #endif
