@@ -66,6 +66,8 @@ int set_estimated_accel_bias = false;
 int set_estimated_k_over_m = false;
 float rl_exploration_rate = 0.0;
 int rl_autostart = false;
+int rl_exploring_starts = true;
+int rl_exploring_starts_frozen = false;
 
 // Declaration of local variables
 static int32_t number_of_variables = 0;
@@ -115,7 +117,9 @@ static Butterworth4LowPass filt_motor_speed[4];
 static Butterworth4LowPass filt_body_rate[4];
 
 // Quadrotor specific variables
-static float k_D = 0.27106224;
+//static float k_D = 0.27106224; // Bebop 1
+static float k_D = 0.37283936; // Bebop 2
+
 static int estimate_k_over_m_counter = 0;
 static double estimated_k_over_m[4] = {0.0, 0.0, 0.0, 0.0};
 //static float estimated_k_over_m[4] = {3.5851632392191094E-06, 3.5851632392191094E-06, 3.5851632392191094E-06, 3.5851632392191094E-06};
@@ -136,7 +140,8 @@ static rl_state current_state;
 static uint16_t action_policy;
 static uint16_t action_chosen;
 static uint16_t action_performed;
-static float discr_state_F_ext_bounds[POLICY_SIZE_1] = {-1.05, -0.95, -0.85, -0.75, -0.65, -0.55, -0.45, -0.35, -0.25};
+static float discr_state_F_ext_bounds[POLICY_SIZE_1] = {-1.05, -0.95, -0.85, -0.75, -0.65, -0.55, -0.45, -0.35, -0.25}; // Bebop 1
+//static float discr_state_F_ext_bounds[POLICY_SIZE_1] = {-1.35, -1.25, -1.15, -1.05, -0.95, -0.85, -0.75, -0.65, -0.55}; // Bebop 2
 static uint16_t discr_state_prev_action_bounds[POLICY_SIZE_2] = {0.5, 1.5, 2,5};
 static uint16_t action_space[3] = {1, 2, 3};
 static uint16_t current_policy[POLICY_SIZE_1][POLICY_SIZE_2] = {};
@@ -155,6 +160,7 @@ static int rl_intervention_save = false;
 static int rl_episode_fail = false;
 static int rl_episode_timeout = false;
 static float F_ext_rolling_mean;
+static float rl_starting_height = 1.0;
 
 static rl_variable list_of_variables_to_log[40] = {
         // Name, Type, Format, *pointer
@@ -234,6 +240,7 @@ static void rl_obstacle_avoidance_state_estimator(void);
 static void rl_obstacle_avoidance_perform_action(uint16_t action);
 static int rl_obstacle_avoidance_check_crash(void);
 static float randn (float mu, float sigma);
+static float random_float_in_range(float min, float max);
 static void send_rl_variables(struct transport_tx *trans, struct link_device *dev);
 static void send_rl_variables(struct transport_tx *trans, struct link_device *dev){
     // When prompted, return all the telemetry variables
@@ -260,6 +267,34 @@ void rl_obstacle_avoidance_init(void) {
 //    // Load CSV measurements
 //    parseCSVmeasurements();
 //#endif
+}
+
+/*
+ *  Function to close current log file and start a new one
+ */
+void rl_obstace_avoidance_new_log_file(void){
+    if(RL_OBSTACLE_AVOIDANCE_LOG){
+        // Close previous log file
+        log_to_file_stop();
+
+        // Create a new one
+
+        // Create csv header line
+        char csv_header_line[1000] = "";
+        int i;
+        for (i=0; i < number_of_variables; i++){
+            if(i>0){
+                strcat(csv_header_line, ",");
+            }
+            strcat(csv_header_line, list_of_variables_to_log[i].name);
+        }
+        strcat(csv_header_line, "\n");
+
+        // Write header line to file
+
+        log_to_file_start(csv_header_line);
+
+    }
 }
 
 /** Function called when the module is started, performs the following functions:
@@ -541,12 +576,25 @@ void rl_obstacle_avoidance_start_episode(){
     episode_start_time_seconds = currentTime.tv_sec;
     episode_start_time_milliseconds = currentTime.tv_usec;
 
+    // Set action to one (no-action) (for the state prev_action)
+    action_chosen = 1;
+    action_performed = 1;
 
-    // Set action to zero (for the state prev_action)
-    action_chosen = 0;
+    // Determine exploring starts height
+    if(rl_exploring_starts){
+        rl_exploring_starts_frozen = true;
+        rl_starting_height = random_float_in_range(0.1, 0.45);
+    } else {
+        rl_exploring_starts_frozen = false;
+        rl_starting_height = 1.0;
+    }
 
     // Print to the console
-    printf("New episode started, episode number %d\n", episode);
+    if(rl_exploring_starts) {
+        printf("New episode started, episode number %d, frozen till %.2fm\n", episode, rl_starting_height);
+    } else {
+        printf("New episode started, episode number %d\n", episode);
+    }
 }
 
 /*
@@ -576,21 +624,32 @@ void rl_obstacle_avoidance_periodic(void) {
     if((flight_status >= 50) && (flight_status < 60) && (rl_episode_fail == false)){
 
         // Check for episode timeout
-        if((rl_intervention_hover == false) && (rl_intervention_save == false) && (rl_episode_timeout == false)){
-            if(episode_time_rl > max_episode_length){
+        if((rl_intervention_hover == false) && (rl_intervention_save == false) && (rl_episode_timeout == false)) {
+            if (episode_time_rl > max_episode_length) {
                 rl_episode_timeout = true;
-                printf("Episode timeout at %d seconds\n", (int) episode_time_rl/1000);
+                printf("Episode timeout at %d seconds\n", (int) episode_time_rl / 1000);
             }
         }
 
+        // Check for end of exploring starts freeze
+        if((rl_exploring_starts == true) && (rl_exploring_starts_frozen == true)){
+            // Frozen, check height
+//            printf("%.2f\n", enu_position_z);
+            if(enu_position_z < rl_starting_height){
+//                printf("test");
+                rl_exploring_starts_frozen = false;
+//                printf("Ended exploring starts at height: %.2f\n", enu_position_z);
+            }
+        }
 
         // Only pick and perform an action if we're not yet in another action
-        if((rl_intervention_hover == false) && (rl_intervention_save == false) && (rl_episode_timeout == false)){
+        if((rl_intervention_hover == false) && (rl_intervention_save == false) && (rl_episode_timeout == false) && (rl_exploring_starts_frozen == false)){
             // Prepare next timestep, get next action from policy
             action_policy = rl_obstacle_avoidance_get_action(current_state);
 
             // Exploration
-            random_double = (double)rand() / (double)RAND_MAX ;
+            random_double = (double)rand() / (double)RAND_MAX;
+//            printf("Random double: %f \n", random_double);
             if(random_double < rl_exploration_rate){
                 // Random action
                 action_chosen = action_space[rand() % 3];
@@ -606,6 +665,7 @@ void rl_obstacle_avoidance_periodic(void) {
             // Check safety of action and need to abort
 
             if ((rl_obstacle_avoidance_check_crash() == true) || (rl_episode_fail == true)){
+//                printf('%.2f', enu_position_z);
                 action_performed = 4;
             } else {
                 action_performed = action_chosen;
@@ -630,6 +690,7 @@ void rl_obstacle_avoidance_end_episode(){
     rl_intervention_hover = false;
     rl_episode_timeout = false;
     printf("Episode ended\n");
+    rl_obstace_avoidance_new_log_file();
 }
 
 void rl_obstacle_avoidance_state_estimator(void){
@@ -930,6 +991,18 @@ int random_in_range(int min, int max){
 }
 
 #endif
+
+
+/*
+ *  Generate random float within a specified range
+ */
+
+float random_float_in_range(float min, float max)
+{
+    float range = (max - min);
+    float div = RAND_MAX / range;
+    return min + (rand() / div);
+}
 
 /*
  *  Request new policy

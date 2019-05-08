@@ -55,6 +55,7 @@ extern int set_estimated_accel_bias;
 extern int set_estimated_k_over_m;
 extern float rl_exploration_rate;
 extern int rl_autostart;
+extern int rl_exploring_starts;
 
 // Functions
 extern void rl_obstacle_avoidance_init(void);
@@ -64,6 +65,7 @@ extern void rl_obstacle_avoidance_stop(void);
 extern void rl_obstacle_avoidance_turn_on(void);
 extern void rl_obstacle_avoidance_turn_off(void);
 
+extern void rl_obstace_avoidance_new_log_file(void);
 extern int rl_obstacle_avoidance_est_accel_bias(void);
 extern void rl_obstacle_avoidance_est_k_over_m(void);
 extern void rl_obstacle_avoidance_update_measurements(void);
