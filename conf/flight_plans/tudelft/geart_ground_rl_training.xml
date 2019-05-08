@@ -18,12 +18,12 @@
         <waypoint lat="51.990631" lon="4.376796" name="HOME"/>
         <waypoint name="CLIMB" x="1.9" y="1.0"/>
         <waypoint name="STDBY" x="1.9" y="1.0"/>
-        <waypoint name="TD" x="0.8" y="-1.7"/>
+        <waypoint name="TD" x="1.9" y="1.0"/>
         <!--<waypoint name="EPISODE_START" x="2.9" y="-1.5" height="1.0" />-->
-        <waypoint name="EPISODE_START" x="-0.7" y="-4.0" height="1.0" />
+        <waypoint name="EPISODE_START" x="2.2" y="-2.0" height="1.0" />
         <!--<waypoint name="EPISODE_HOVER" x="2.9" y="-1.5" height="0.7" />-->
         <!--<waypoint name="EPISODE_TARGET" x="2.9" y="-1.5" height="0.0" />-->
-        <waypoint name="EPISODE_TARGET" x="-0.7" y="-4.0" height="0.0" />
+        <waypoint name="EPISODE_TARGET" x="2.2" y="-2.0" height="0.0" />
         <waypoint lat="51.9905836" lon="4.3767729" name="_CZ1"/>
         <waypoint lat="51.9906365" lon="4.3767138" name="_CZ2"/>
         <waypoint lat="51.990680" lon="4.376805" name="_CZ3"/>
@@ -100,6 +100,7 @@
         <!--<call_once fun="rl_obstacle_avoidance_turn_on()"/>-->
         <!--</block>-->
         <block name="Start Obstacle Avoidance initialization">
+            <call_once fun="NavSetWaypointHere(WP_EPISODE_START)"/>
             <call_once fun="rl_obstacle_avoidance_turn_on()"/>
             <call_once fun="rl_obstacle_avoidance_request_new_policy()" />
             <attitude pitch="0" roll="0" throttle="0" until="set_estimated_accel_bias" vmode="throttle"/>
@@ -164,7 +165,7 @@
         </block>
         <block name="Interrupt save">
             <call_once fun="rl_obstacle_avoidance_flight_status(70)" />
-            <attitude pitch="0" roll="0" throttle="1" until="(GetPosAlt() > 0.3)" vmode="throttle"/>
+            <attitude pitch="0" roll="0" throttle="0.8" until="(GetPosAlt() > 0.3)" vmode="throttle"/>
             <call_once fun="rl_obstacle_avoidance_save_concluded()" />
             <deroute block="End episode"/>
         </block>
@@ -180,7 +181,7 @@
             <stay wp="HOME"/>
         </block>
         <block key="l" name="Land here" strip_button="Land Here" strip_icon="land-right.png">
-            <call_once fun="rl_obstacle_avoidance_flight_status(90)" />
+            <!--<call_once fun="rl_obstacle_avoidance_flight_status(90)" />-->
             <call_once fun="NavSetWaypointHere(WP_TD)"/>
             <go wp="TD"/>
             <deroute block="Flare"/>
@@ -190,10 +191,10 @@
             <deroute block="Flare"/>
         </block>
         <block name="Flare">
-            <exception cond="NavDetectGround()" deroute="Holding point"/>
-            <exception cond="!nav_is_in_flight()" deroute="Landed"/>
+            <!--<exception cond="NavDetectGround()" deroute="Holding point"/>-->
+            <!--<exception cond="!nav_is_in_flight()" deroute="Landed"/>-->
             <exception cond="0.10 > GetPosAlt()" deroute="Landed"/>
-            <call_once fun="NavStartDetectGround()"/>
+            <!--<call_once fun="NavStartDetectGround()"/>-->
             <stay climb="nav_descend_vspeed" vmode="climb" wp="TD"/>
         </block>
         <block name="Landed">
