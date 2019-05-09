@@ -118,7 +118,11 @@ static Butterworth4LowPass filt_body_rate[4];
 
 // Quadrotor specific variables
 //static float k_D = 0.27106224; // Bebop 1
-static float k_D = 0.37283936; // Bebop 2
+//static float k_D = 0.37283936; // Bebop 2
+
+#ifndef RL_OBSTACLE_AVOID_k_D_z
+#define RL_OBSTACLE_AVOID_k_D_z 0.0
+#endif
 
 static int estimate_k_over_m_counter = 0;
 static double estimated_k_over_m[4] = {0.0, 0.0, 0.0, 0.0};
@@ -502,9 +506,9 @@ void rl_obstacle_avoidance_est_k_over_m(void){
         }
         // Estimate current k_over_m
         if (body_speed_w < 0)
-            F_drag = -k_D*powf(body_speed_w,2);
+            F_drag = -RL_OBSTACLE_AVOID_k_D_z*powf(body_speed_w,2);
         else
-            F_drag = k_D*powf(body_speed_w,2);
+            F_drag = RL_OBSTACLE_AVOID_k_D_z*powf(body_speed_w,2);
 
         current_k_over_m = (9.81 + (filt_accel_body[2].lp2.o[0] - estimated_accel_bias[2]) + F_drag)/ sum_omega_squared;
 //        printf("Sum_omega_squared: %f -> Current k over m: %f\n", sum_omega_squared, current_k_over_m);
@@ -539,9 +543,9 @@ static float estimate_F_ext_onboard(void){
         }
         // Estimate dragF
         if (body_speed_w < 0)
-            F_drag = -k_D*powf(body_speed_w,2);
+            F_drag = -RL_OBSTACLE_AVOID_k_D_z*powf(body_speed_w,2);
         else
-            F_drag = k_D*powf(body_speed_w,2);
+            F_drag = RL_OBSTACLE_AVOID_k_D_z*powf(body_speed_w,2);
 
         // Sum to get F_ext
         F_ext = (filt_accel_body[2].lp2.o[0] - estimated_accel_bias[2]) \
