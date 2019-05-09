@@ -96,6 +96,10 @@
         <define name="MAG_Z_NEUTRAL" value="0"/>
     </section>
 
+    <section name="RL_OBSTACLE_AVOID" prefix="RL_OBSTACLE_AVOID_">
+        <define name="k_D_z" value="0.27106224"/>
+    </section>
+
     <!-- local magnetic field -->
     <!-- http://wiki.paparazziuav.org/wiki/Subsystem/ahrs#Local_Magnetic_Field -->
     <section name="AHRS" prefix="AHRS_">
