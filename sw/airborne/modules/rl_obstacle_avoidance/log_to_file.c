@@ -16,7 +16,7 @@
 #ifndef USE_NPS
     #define RL_OBSTACLE_AVOIDANCE_LOG_PATH /data/ftp/internal_000
 #else
-    #define RL_OBSTACLE_AVOIDANCE_LOG_PATH /home/geart/NPSsimulation
+    #define RL_OBSTACLE_AVOIDANCE_LOG_PATH /tmp/NPSsimulation
 #endif
 
 #endif
@@ -39,7 +39,8 @@ void log_to_file_start(char csv_header_line[])
 
     if(err < 0) {
         // try to make the directory
-        mkdir(STRINGIFY(RL_OBSTACLE_AVOIDANCE_LOG_PATH), 0666);
+        printf("Could not find directory: %s \n", STRINGIFY(RL_OBSTACLE_AVOIDANCE_LOG_PATH));
+        mkdir(STRINGIFY(RL_OBSTACLE_AVOIDANCE_LOG_PATH), S_IRWXU | S_IRWXG | S_IRWXO);
     }
 
     // Get current date/time, format is YYYY-MM-DD.HH:mm:ss
@@ -62,6 +63,7 @@ void log_to_file_start(char csv_header_line[])
         sprintf(rl_obstacle_avoidance_run_filename, "%s_%05d.csv", date_time, counter);
         counter++;
     }
+    printf("File: %s \n", filename);
 
     file_logger = fopen(filename, "wb");
 

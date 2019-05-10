@@ -82,6 +82,8 @@
       !(IndexOfBlock('Holding point') > nav_block) &&
       !(nav_block >= IndexOfBlock('Land here')) &&
       (autopilot_in_flight() == true) )" deroute="Land here"/>
+        <exception cond="rl_obstacle_avoidance_hover()" deroute="Interrupt hover"/>
+        <exception cond="rl_obstacle_avoidance_save()" deroute="Interrupt save"/>
     </exceptions>
     <blocks>
         <block name="Wait GPS">
@@ -149,23 +151,21 @@
         <block key="m" name="Run episode">
             <call_once fun="rl_obstacle_avoidance_flight_status(50)" />
             <call_once fun="NavSetWaypointHere(WP_EPISODE_TARGET)"/>
-            <exception cond="rl_obstacle_avoidance_hover()" deroute="Interrupt hover"/>
-            <exception cond="rl_obstacle_avoidance_save()" deroute="Interrupt save"/>
             <exception cond="rl_obstacle_avoidance_fail()" deroute="End episode"/>
             <exception cond="rl_obstacle_avoidance_timeout()" deroute="End episode"/>
             <!--<stay wp="EPISODE_TARGET" vmode="climb" climb="0.0" until="stage_time>1"/>-->
             <stay wp="EPISODE_TARGET" vmode="climb" climb="rl_obstacle_avoidance_descend_speed"/>
         </block>
         <block name="Interrupt hover">
+            <call_once fun="NavSetWaypointHere(WP_EPISODE_TARGET)"/>
             <call_once fun="rl_obstacle_avoidance_flight_status(60)" />
             <stay wp="EPISODE_TARGET" vmode="climb" climb="0.0"  until="stage_time>0.5"/>
             <call_once fun="rl_obstacle_avoidance_hover_concluded()" />
-            <!--<stay wp="EPISODE_TARGET" vmode="climb" climb="0.0"  until="stage_time>10"/>-->
             <deroute block="Run episode"/>
         </block>
         <block name="Interrupt save">
             <call_once fun="rl_obstacle_avoidance_flight_status(70)" />
-            <attitude pitch="0" roll="0" throttle="0.8" until="(GetPosAlt() > 0.3)" vmode="throttle"/>
+            <attitude pitch="0" roll="0" throttle="0.8" until="stage_time>0.5" vmode="throttle"/>
             <call_once fun="rl_obstacle_avoidance_save_concluded()" />
             <deroute block="End episode"/>
         </block>

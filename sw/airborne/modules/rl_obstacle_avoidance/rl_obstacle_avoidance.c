@@ -146,7 +146,7 @@ static uint16_t action_chosen;
 static uint16_t action_performed;
 static float discr_state_F_ext_bounds[POLICY_SIZE_1] = {-1.05, -0.95, -0.85, -0.75, -0.65, -0.55, -0.45, -0.35, -0.25}; // Bebop 1
 //static float discr_state_F_ext_bounds[POLICY_SIZE_1] = {-1.35, -1.25, -1.15, -1.05, -0.95, -0.85, -0.75, -0.65, -0.55}; // Bebop 2
-static uint16_t discr_state_prev_action_bounds[POLICY_SIZE_2] = {0.5, 1.5, 2,5};
+//static uint16_t discr_state_prev_action_bounds[POLICY_SIZE_2] = {0.5, 1.5, 2.5};
 static uint16_t action_space[3] = {1, 2, 3};
 static uint16_t current_policy[POLICY_SIZE_1][POLICY_SIZE_2] = {};
 //static int current_policy[POLICY_SIZE_1][POLICY_SIZE_2] = {{1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}};
@@ -224,18 +224,18 @@ static rl_variable list_of_variables_to_log[40] = {
      * Specific simulator variables and functions
      */
     // Variables
-    #define RL_NUMBER_OF_MEAUSUREMENTS 150432
-    static float F_ext_measurements_z[RL_NUMBER_OF_MEAUSUREMENTS];
-    static float F_ext_measurements_F_ext[RL_NUMBER_OF_MEAUSUREMENTS];
-    static FILE *csv_measurements = NULL;
+//    #define RL_NUMBER_OF_MEAUSUREMENTS 150432
+//    static float F_ext_measurements_z[RL_NUMBER_OF_MEAUSUREMENTS];
+//    static float F_ext_measurements_F_ext[RL_NUMBER_OF_MEAUSUREMENTS];
+//    static FILE *csv_measurements = NULL;
     static Butterworth2LowPass filt_noise_F_ext_simulated;
     static float noise_F_ext_cutoff = 1.8;
 
     // Functions
     static float estimate_F_ext_from_measurements(float height);
-    static void parseCSVmeasurements(void);
-    static float binary_search(float sorted_list[], int low, int high, float element);
-    static int random_in_range(int min, int max);
+//    static void parseCSVmeasurements(void);
+//    static float binary_search(float sorted_list[], int low, int high, float element);
+//    static int random_in_range(int min, int max);
 #endif
 
 static void rl_obstacle_avoidance_send_message_down(char *_request, char *_parameters);
@@ -818,7 +818,7 @@ void rl_obstacle_avoidance_hover_concluded(void){
 }
 
 void rl_obstacle_avoidance_save_concluded(void){
-//    rl_intervention_save = false;
+    rl_intervention_save = false;
 }
 
 void rl_obstacle_avoidance_turn_on(void){
@@ -869,14 +869,14 @@ void rl_obstacle_avoidance_flight_status(int status){
 float estimate_F_ext_from_measurements(float height){
     float F_ext;
     float F_ext_noise_new;
-    float prop_radius = 0.05;
-    float F_ext_theory;
+//    float prop_radius = 0.05;
+//    float F_ext_theory;
     float F_ext_fit;
     float noise_mu = 0.055;
     float noise_sigma = 0.348*4;
 
     // Estimate F_ext from theory
-    F_ext_theory = -9.81 * (1 / (1 - powf((prop_radius/ (4 * height)),2)) - 1);
+//    F_ext_theory = -9.81 * (1 / (1 - powf((prop_radius/ (4 * height)),2)) - 1);
     F_ext_fit = -5.58364265E-12*1/(height+5.03702366E-01)-1.26883748E-02*1/powf(height+7.44916373E-02,2)-1.40903748E-01;
 
     // Calculate low-pass filtered noise
@@ -936,63 +936,63 @@ float randn (float mu, float sigma)
 }
 
 
-/** Function used to parse the measurements csv file
- * */
-void parseCSVmeasurements(void){
-    char buf[120];
-    char *item;
-    int32_t reccount = 0;
-
-    csv_measurements = fopen("/home/geart/Measurements/ground_F_ext_c.csv","r");
-
-    if (csv_measurements == NULL) {
-        printf("Error opening measurement file: %s\n", strerror(errno));
-    }
-
-    // Loop through file
-    while (fgets(buf,120,csv_measurements)) {
-
-        // Step
-        item = strtok(buf, ",");
-
-        // F_ext
-        item = strtok(NULL, ",");
-        F_ext_measurements_F_ext[reccount] = atof(item);
-
-        // z
-        item = strtok(NULL, " ");
-        F_ext_measurements_z[reccount] = atof(item);
-
-        reccount++;
-    }
-
-    // Close file
-    fclose(csv_measurements);
-}
+///** Function used to parse the measurements csv file
+// * */
+//void parseCSVmeasurements(void){
+//    char buf[120];
+//    char *item;
+//    int32_t reccount = 0;
+//
+//    csv_measurements = fopen("/home/geart/Measurements/ground_F_ext_c.csv","r");
+//
+//    if (csv_measurements == NULL) {
+//        printf("Error opening measurement file: %s\n", strerror(errno));
+//    }
+//
+//    // Loop through file
+//    while (fgets(buf,120,csv_measurements)) {
+//
+//        // Step
+//        item = strtok(buf, ",");
+//
+//        // F_ext
+//        item = strtok(NULL, ",");
+//        F_ext_measurements_F_ext[reccount] = atof(item);
+//
+//        // z
+//        item = strtok(NULL, " ");
+//        F_ext_measurements_z[reccount] = atof(item);
+//
+//        reccount++;
+//    }
+//
+//    // Close file
+//    fclose(csv_measurements);
+//}
 
 
 /** Binary search algorithm
  * */
 
-float binary_search(float sorted_list[], int low, int high, float element)
-{
-
-    if (high < low){
-        int random_int = random_in_range(high-10,low+10);
-        return random_int;
-    }
-    int middle = low + (high - low)/2;
-    if (element < sorted_list[middle])
-        return binary_search(sorted_list, low, middle-1, element);
-    else if (element > sorted_list[middle])
-        return binary_search(sorted_list, middle+1, high, element);
-    else
-        return middle;
-}
-
-int random_in_range(int min, int max){
-    return min + rand() / (RAND_MAX / (max - min + 1) + 1);
-}
+//float binary_search(float sorted_list[], int low, int high, float element)
+//{
+//
+//    if (high < low){
+//        int random_int = random_in_range(high-10,low+10);
+//        return random_int;
+//    }
+//    int middle = low + (high - low)/2;
+//    if (element < sorted_list[middle])
+//        return binary_search(sorted_list, low, middle-1, element);
+//    else if (element > sorted_list[middle])
+//        return binary_search(sorted_list, middle+1, high, element);
+//    else
+//        return middle;
+//}
+//
+//int random_in_range(int min, int max){
+//    return min + rand() / (RAND_MAX / (max - min + 1) + 1);
+//}
 
 #endif
 
@@ -1043,7 +1043,7 @@ void rl_obstacle_avoidance_send_message_down(char *_request, char *_parameters){
     // Setup message struct
     msg.trans = &(DefaultChannel).trans_tx;
     msg.dev = &(DefaultDevice).device;
-    msg.sender_id = 42;
+    msg.sender_id = AC_ID;
     msg.receiver_id = 0;
     msg.component_id = 0;
 

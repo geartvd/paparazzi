@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append("/home/geart/paparazzi/sw/ext/pprzlink/lib/v2.0/python")
+sys.path.append("../../ext/pprzlink/lib/v2.0/python")
 from ivy.std_api import *
 import pprzlink.ivy
 import pprzlink.message as message
@@ -96,7 +96,7 @@ class QuadrotorConnection:
         """Function to retrieve episode history file"""
 
         # Copy file to local folder
-        dst = '/home/geart/PythonCode/OnlineLearning/Logfiles/' + log_filename
+        dst = 'OnlineLearning/Logfiles/' + log_filename
         if self.selected_mode == 'f':
             # Get from ftp
             print('Getting from FTP')
@@ -117,7 +117,7 @@ class QuadrotorConnection:
         else:
             # Get from local file
             print('Getting from local file')
-            src = '/home/geart/NPSsimulation/' + log_filename
+            src = '/tmp/NPSsimulation/' + log_filename
             copyfile(src, dst)
 
         full_df = pd.read_csv(dst, index_col=0, header=0)
