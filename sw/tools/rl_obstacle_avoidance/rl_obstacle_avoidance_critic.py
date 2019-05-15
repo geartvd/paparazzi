@@ -21,26 +21,6 @@ from Classes.QuadrotorConnection import QuadrotorConnection
 critic = None
 critic_history = []
 
-number_of_episodes = 50
-
-# Set critic settings
-critic_settings = {
-    'gamma': 1.0,
-    'alpha': (0.5, round(number_of_episodes/2)),  # (0.3, 50)
-    'algorithm': 'Q-learning',
-    'elig_lambda': 0.1,
-    'exploration_in_policy': 'epsilon_greedy',
-    'epsilon': (0.5, 0.0, round(number_of_episodes/2)),  # (0.5, 0.05, 50)
-}
-
-
-agent_settings = {
-    # 'exploration': 'epsilon_greedy',
-    'epsilon': 0.01,  # Chance that a random action is picked instead of the (greedy) policy
-    'critic': TemporalDifferenceCritic,
-    'critic_settings': critic_settings
-}
-
 # Learning variables
 critic_alpha_decrease = False
 critic_epsilon_decrease = False
@@ -49,24 +29,46 @@ agent_epsilon = 0.0
 total_episode_counter = 0
 evaluation_only = False
 
-# Definition of the state space
-state_space = collections.OrderedDict()
-state_space['F_ext'] = np.linspace(-1.0, -0.2, 9) # Bebop 1
-# state_space['F_ext'] = np.linspace(-1.3, -0.5, 9) # Bebop 2
-state_space['prev_action'] = np.array([1., 2., 3.])
+def prepare_training(number_of_episodes=50):
 
-# Definition of the action space
-action_space = collections.OrderedDict()
-action_space['intervene'] = np.array([1., 2., 3.])
+    # Set critic settings
+    critic_settings = {
+        'gamma': 1.0,
+        'alpha': (0.5, round(number_of_episodes/2)),  # (0.3, 50)
+        'algorithm': 'Q-learning',
+        'elig_lambda': 0.1,
+        'exploration_in_policy': 'epsilon_greedy',
+        'epsilon': (0.5, 0.0, round(number_of_episodes/2)),  # (0.5, 0.05, 50)
+    }
 
-training = Training(
-    env_class=GroundEnvironment,
-    agent_class=RLActor,
-    agent_settings=agent_settings,
-    state_space=state_space,
-    action_space=action_space,
-    mode='online_critic_only',
-)
+
+    agent_settings = {
+        # 'exploration': 'epsilon_greedy',
+        'epsilon': 0.01,  # Chance that a random action is picked instead of the (greedy) policy
+        'critic': TemporalDifferenceCritic,
+        'critic_settings': critic_settings
+    }
+
+
+    # Definition of the state space
+    state_space = collections.OrderedDict()
+    state_space['F_ext'] = np.linspace(-1.0, -0.2, 9) # Bebop 1
+    # state_space['F_ext'] = np.linspace(-1.3, -0.5, 9) # Bebop 2
+    state_space['prev_action'] = np.array([1., 2., 3.])
+
+    # Definition of the action space
+    action_space = collections.OrderedDict()
+    action_space['intervene'] = np.array([1., 2., 3.])
+
+    training = Training(
+        env_class=GroundEnvironment,
+        agent_class=RLActor,
+        agent_settings=agent_settings,
+        state_space=state_space,
+        action_space=action_space,
+        mode='online_critic_only',
+    )
+    return training
 
 min_save_height = 0.25
 ground_termination_distance = 0.05
@@ -425,6 +427,17 @@ if __name__ == '__main__':
         if selected_mode not in ['s', 'f']:
             raise ValueError
 
+    # Number of episodes
+    print('How many episodes?')
+    input_number_of_episodes = input()
+    if input_number_of_episodes.isdigit():
+        number_of_episodes = int(input_number_of_episodes)
+    else:
+        raise ValueError
+
+    # Prepare training environment
+    training = prepare_training(number_of_episodes)
+
     # Training or evaluation?
     print('Training (t) or evaluation (e)?')
     training_evaluation = input()
@@ -433,10 +446,10 @@ if __name__ == '__main__':
 
     if training_evaluation == 'e':
         # Evaluation, so fully greedy and no learning
-        agent_settings['epsilon'] = 0.0
-        agent_settings['critic_settings']['epsilon'] = 0.0
-        agent_settings['critic_settings']['alpha'] = 0.0
-        agent_settings['critic_settings']['elig_lambda'] = 0.0
+        training.agent_settings['epsilon'] = 0.0
+        training.agent_settings['critic_settings']['epsilon'] = 0.0
+        training.agent_settings['critic_settings']['alpha'] = 0.0
+        training.agent_settings['critic_settings']['elig_lambda'] = 0.0
         evaluation_only = True
 
     # Set save paths
@@ -476,11 +489,12 @@ if __name__ == '__main__':
             print('Which critic should be used? Enter ID for existing, or n for new:')
             critic_id = input()
             if critic_id == 'n':
-                critic = agent_settings['critic'](state_space=state_space, action_space=action_space,
-                                                  gamma=agent_settings['critic_settings']['gamma'],
+                critic = training.agent_settings['critic'](state_space=training.state_space,
+                                                           action_space=training.action_space,
+                                                  gamma=training.agent_settings['critic_settings']['gamma'],
                                                   alpha=0.0,
-                                                  algorithm=agent_settings['critic_settings']['algorithm'],
-                                                  elig_lambda=agent_settings['critic_settings']['elig_lambda'])
+                                                  algorithm=training.agent_settings['critic_settings']['algorithm'],
+                                                  elig_lambda=training.agent_settings['critic_settings']['elig_lambda'])
             else:
                 try:
                     critic_file = list_of_files[int(critic_id)]
@@ -499,8 +513,8 @@ if __name__ == '__main__':
                                         show_polic_updates='short')
 
         # Prepare critic and agent
-        prepare_agent(agent_settings)
-        prepare_critic(agent_settings)
+        prepare_agent(training.agent_settings)
+        prepare_critic(training.agent_settings)
 
         # Start run
         training.start_run(critic)

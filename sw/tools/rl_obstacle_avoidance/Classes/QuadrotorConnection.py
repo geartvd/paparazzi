@@ -96,7 +96,7 @@ class QuadrotorConnection:
         """Function to retrieve episode history file"""
 
         # Copy file to local folder
-        dst = 'OnlineLearning/Logfiles/' + log_filename
+        dst = '/tmp/' + log_filename
         if self.selected_mode == 'f':
             # Get from ftp
             print('Getting from FTP')
